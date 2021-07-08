@@ -1,4 +1,5 @@
 import time
+import math
 
 from mutagen.mp3 import MP3
 from pygame import mixer
@@ -13,6 +14,11 @@ from rich.progress import (BarColumn, Progress, ProgressColumn, TimeRemainingCol
 from rich.prompt import Prompt
 from rich.rule import Rule
 from rich.table import Table
+
+# play symbol = \U000025BA
+# pause symbol = ||
+# replay symble = \U000021BB
+# todo finish symbols
 
 class KeyBinder():
 
@@ -108,7 +114,7 @@ def formatTime(seconds = None):
         if seconds < 10:
             return f"[grey62]0:00:0{seconds}"
         return f"[grey62]0:00:{seconds}"
-    min = float(seconds / 60).__floor__()
+    min = math.floor(seconds / 60)
     sec = seconds % 60
     if sec < 10:
         sec = f"0{sec}"
@@ -116,7 +122,7 @@ def formatTime(seconds = None):
         if min < 10:
             return f"[grey62]0:0{min}:{sec}"
         return f"[grey62]0:{min}:{sec}"
-    hr = float(min / 60).__floor__()
+    hr = math.floor(min / 60)
     min = min % 60
     if min < 10:
         min = f"0{min}"
@@ -125,11 +131,11 @@ def formatTime(seconds = None):
 
 def main() -> None:
     # Initialize Console and music player
-    global dur_comp, paused, completed
+    global dur_comp, player_status, completed
     dur_comp = 0
     dur_left = 0
     completed = False
-    paused = False
+    player_status = None
     window = Console()
     mp3_player = MP3Player("bensound-dubstep.mp3")
 
@@ -165,20 +171,20 @@ def main() -> None:
     mp3_player.start()
 
     def play():
-        global paused
-        if paused:
+        global player_status
+        if player_status == "Paused":
             mp3_player.play()
-            paused = False
+            player_status = "Playing"
 
     def pause():
-        global paused
-        if not paused:
+        global player_status
+        if player_status == "Playing":
             mp3_player.pause()
-            paused = True
+            player_status = "Paused"
 
     def restart():
         global dur_comp, completed
-        if completed:
+        if player_status == "Idle":
             mp3_player.load()
             mp3_player.start()
         else:
@@ -198,16 +204,17 @@ def main() -> None:
     # Render the Layout
     with Live(root_layout, refresh_per_second=10, console=window, screen=True):
         keybinder.start()
+        player_status = "Playing"
         while True:
-            while not player_bar.finished and not paused:
+            while not player_bar.finished and player_status == "Playing":
                 dur_comp += 1
-                dur_left = mp3_player.duration.__floor__() - dur_comp + 1
+                dur_left = math.floor(mp3_player.duration) - dur_comp + 1
                 player_layout["bar-comp"].update(Align.left(formatTime(dur_comp)))
                 player_layout["bar-left"].update(Align.right(formatTime(dur_left)))
                 player_bar.advance(player_bar_id)
                 time.sleep(1)
-            if player_bar.finished and not completed:
-                completed = True
+            if player_bar.finished and player_status != "Idle":
+                player_status = "Idle"
 
 if __name__=='__main__':
     main()
