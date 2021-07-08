@@ -125,11 +125,10 @@ def formatTime(seconds = None):
 
 def main() -> None:
     # Initialize Console and music player
-    global dur_comp
+    global dur_comp, paused, completed
     dur_comp = 0
     dur_left = 0
     completed = False
-    global paused
     paused = False
     window = Console()
     mp3_player = MP3Player("bensound-dubstep.mp3")
@@ -178,15 +177,22 @@ def main() -> None:
             paused = True
 
     def restart():
-        global dur_comp
-        mp3_player.replay()
+        global dur_comp, completed
+        if completed:
+            mp3_player.load()
+            mp3_player.start()
+        else:
+            mp3_player.replay()
         player_bar.reset(player_bar_id)
         dur_comp = 0
 
     keybinds = {
         frozenset([keyboard.KeyCode(vk=160), keyboard.KeyCode(vk=80)]): play,  # ctrl + p
+        frozenset([keyboard.KeyCode(vk=161), keyboard.KeyCode(vk=80)]): play,  # ctrl + p
         frozenset([keyboard.KeyCode(vk=160), keyboard.KeyCode(vk=90)]): pause,  # ctrl + z
+        frozenset([keyboard.KeyCode(vk=161), keyboard.KeyCode(vk=90)]): pause,  # ctrl + z
         frozenset([keyboard.KeyCode(vk=160), keyboard.KeyCode(vk=82)]): restart,  # ctrl + r
+        frozenset([keyboard.KeyCode(vk=161), keyboard.KeyCode(vk=82)]): restart,  # ctrl + r
     }
     keybinder = KeyBinder(keybinds)
     # Render the Layout
@@ -198,7 +204,7 @@ def main() -> None:
                 dur_left = mp3_player.duration.__floor__() - dur_comp + 1
                 player_layout["bar-comp"].update(Align.left(formatTime(dur_comp)))
                 player_layout["bar-left"].update(Align.right(formatTime(dur_left)))
-                player_bar.advance(player_bar_id, 1)
+                player_bar.advance(player_bar_id)
                 time.sleep(1)
             if player_bar.finished and not completed:
                 completed = True
